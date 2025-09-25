@@ -1,26 +1,128 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { CodeSanitizer } from './sanitizer';
+import { ClipboardManager } from './clipboardManager';
+import { StatusBarManager } from './statusBar';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+let sanitizer: CodeSanitizer;
+let clipboardManager: ClipboardManager;
+let statusBar: StatusBarManager;
+
 export function activate(context: vscode.ExtensionContext) {
+	console.log('SafePaste extension is now active!');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "safepaste" is now active!');
+	// Initialize components
+	sanitizer = new CodeSanitizer();
+	clipboardManager = new ClipboardManager(sanitizer);
+	statusBar = new StatusBarManager();
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('safepaste.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from safepaste!');
-	});
+	// Set context for keybindings
+	vscode.commands.executeCommand('setContext', 'safepaste.hasSanitizedContent', false);
+	vscode.commands.executeCommand('setContext', 'safepaste.hasOriginalContent', false);
 
-	context.subscriptions.push(disposable);
+	// Register commands
+	const commands = [
+		vscode.commands.registerCommand('safepaste.sanitizeClipboard', async () => {
+			try {
+				statusBar.updateStatusBar('processing');
+				const result = await clipboardManager.sanitizeClipboard();
+
+				statusBar.updateStatusBar('sanitized', result);
+
+				// Update context for keybindings
+				vscode.commands.executeCommand('setContext', 'safepaste.hasSanitizedContent', true);
+				vscode.commands.executeCommand('setContext', 'safepaste.hasOriginalContent', true);
+
+				if (result.hasChanges) {
+					vscode.window.showInformationMessage(
+						`SafePaste: Applied ${result.appliedRules.length} sanitization rules. Content is ready to paste.`,
+						'Show Changes', 'Paste Now'
+					).then(selection => {
+						if (selection === 'Show Changes') {
+							vscode.commands.executeCommand('safepaste.showStatus');
+						} else if (selection === 'Paste Now') {
+							vscode.commands.executeCommand('safepaste.pasteSanitized');
+						}
+					});
+				} else {
+					vscode.window.showInformationMessage('SafePaste: No sensitive content detected.');
+				}
+			} catch (error) {
+				statusBar.updateStatusBar('error');
+				vscode.window.showErrorMessage(`SafePaste Error: ${error}`);
+			}
+		}),
+
+		vscode.commands.registerCommand('safepaste.pasteSanitized', async () => {
+			try {
+				await clipboardManager.pasteSanitized();
+				vscode.window.showInformationMessage('SafePaste: Sanitized content pasted.');
+			} catch (error) {
+				vscode.window.showErrorMessage(`SafePaste Error: ${error}`);
+			}
+		}),
+
+		vscode.commands.registerCommand('safepaste.pasteOriginal', async () => {
+			try {
+				await clipboardManager.pasteOriginal();
+				vscode.window.showWarningMessage('SafePaste: Original (unsanitized) content pasted.');
+			} catch (error) {
+				vscode.window.showErrorMessage(`SafePaste Error: ${error}`);
+			}
+		}),
+
+		vscode.commands.registerCommand('safepaste.showStatus', () => {
+			const result = clipboardManager.getLastSanitizationResult();
+			statusBar.showStatusDialog(result || undefined);
+		}),
+
+		vscode.commands.registerCommand('safepaste.configureRules', () => {
+			vscode.commands.executeCommand('workbench.action.openSettings', 'safepaste');
+		}),
+
+		vscode.commands.registerCommand('safepaste.clearContent', () => {
+			clipboardManager.clear();
+			statusBar.updateStatusBar('ready');
+
+			// Update context for keybindings
+			vscode.commands.executeCommand('setContext', 'safepaste.hasSanitizedContent', false);
+			vscode.commands.executeCommand('setContext', 'safepaste.hasOriginalContent', false);
+
+			vscode.window.showInformationMessage('SafePaste: Stored content cleared.');
+		}),
+
+		vscode.commands.registerCommand('safepaste.pasteWithAutoSanitize', async () => {
+			try {
+				await clipboardManager.pasteWithAutoSanitize();
+
+				// Update context for keybindings
+				vscode.commands.executeCommand('setContext', 'safepaste.hasSanitizedContent', true);
+				vscode.commands.executeCommand('setContext', 'safepaste.hasOriginalContent', true);
+			} catch (error) {
+				vscode.window.showErrorMessage(`SafePaste Error: ${error}`);
+			}
+		})
+	];
+
+	// Register all commands
+	commands.forEach(command => context.subscriptions.push(command));
+
+	// Register status bar
+	context.subscriptions.push(statusBar);
+
+	// Listen for configuration changes
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration(event => {
+			if (event.affectsConfiguration('safepaste')) {
+				// Reload sanitizer with new configuration
+				sanitizer = new CodeSanitizer();
+				clipboardManager = new ClipboardManager(sanitizer);
+			}
+		})
+	);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+	if (statusBar) {
+		statusBar.dispose();
+	}
+}

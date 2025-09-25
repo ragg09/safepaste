@@ -7,17 +7,180 @@
     "vscode": "^1.104.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Keymaps",
+    "Snippets"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "safepaste.helloWorld",
-        "title": "Hello World"
+        "command": "safepaste.sanitizeClipboard",
+        "title": "Sanitize Clipboard Content",
+        "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.pasteSanitized",
+        "title": "Paste Sanitized Content",
+        "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.pasteOriginal",
+        "title": "Paste Original Content",
+        "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.showStatus",
+        "title": "Show Status",
+        "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.configureRules",
+        "title": "Configure Sanitization Rules",
+        "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.clearContent",
+        "title": "Clear Stored Content",
+        "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.pasteWithAutoSanitize",
+        "title": "Paste with Auto-Sanitize",
+        "category": "SafePaste"
       }
-    ]
+    ],
+    "keybindings": [
+      {
+        "command": "safepaste.sanitizeClipboard",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "safepaste.pasteSanitized",
+        "key": "ctrl+v",
+        "mac": "cmd+v",
+        "when": "editorTextFocus && safepaste.hasSanitizedContent"
+      },
+      {
+        "command": "safepaste.pasteOriginal",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorTextFocus && safepaste.hasOriginalContent"
+      },
+      {
+        "command": "safepaste.pasteWithAutoSanitize",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "SafePaste",
+      "properties": {
+        "safepaste.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable SafePaste extension"
+        },
+        "safepaste.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show SafePaste status in status bar"
+        },
+        "safepaste.autoSanitizeOnCopy": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically sanitize content when copying to clipboard"
+        },
+        "safepaste.customRules": {
+          "type": "array",
+          "default": [],
+          "description": "Custom sanitization rules",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Rule name"
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Regular expression pattern"
+              },
+              "replacement": {
+                "type": "string",
+                "description": "Replacement string"
+              },
+              "description": {
+                "type": "string",
+                "description": "Rule description"
+              },
+              "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "Enable this rule"
+              }
+            }
+          }
+        },
+        "safepaste.defaultRules": {
+          "type": "object",
+          "description": "Enable/disable default sanitization rules",
+          "properties": {
+            "api-keys": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize API keys"
+            },
+            "tokens": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize tokens"
+            },
+            "passwords": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize passwords"
+            },
+            "connection-strings": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize database connection strings"
+            },
+            "urls-with-credentials": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize URLs with credentials"
+            },
+            "email-addresses": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize email addresses"
+            },
+            "ip-addresses": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize IP addresses"
+            },
+            "private-keys": {
+              "type": "boolean",
+              "default": true,
+              "description": "Sanitize private keys"
+            },
+            "sensitive-comments": {
+              "type": "boolean",
+              "default": true,
+              "description": "Remove sensitive comments"
+            }
+          }
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
