@@ -112,6 +112,17 @@ function activate(context) {
             vscode.commands.executeCommand('setContext', 'safepaste.hasSanitizedContent', false);
             vscode.commands.executeCommand('setContext', 'safepaste.hasOriginalContent', false);
             vscode.window.showInformationMessage('SafePaste: Stored content cleared.');
+        }),
+        vscode.commands.registerCommand('safepaste.pasteWithAutoSanitize', async () => {
+            try {
+                await clipboardManager.pasteWithAutoSanitize();
+                // Update context for keybindings
+                vscode.commands.executeCommand('setContext', 'safepaste.hasSanitizedContent', true);
+                vscode.commands.executeCommand('setContext', 'safepaste.hasOriginalContent', true);
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`SafePaste Error: ${error}`);
+            }
         })
     ];
     // Register all commands

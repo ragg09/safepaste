@@ -23,6 +23,7 @@ SafePaste is a VS Code extension that automatically sanitizes sensitive data fro
 - **Ctrl+Alt+C** (Cmd+Alt+C on Mac): Sanitize clipboard content
 - **Ctrl+V** (Cmd+V on Mac): Paste sanitized version (when sanitized content available)
 - **Ctrl+Alt+V** (Cmd+Alt+V on Mac): Paste original version
+- **Ctrl+Shift+V** (Cmd+Shift+V on Mac): Paste with auto-sanitize (automatically sanitizes current clipboard before pasting)
 
 ### 📊 Visual Feedback
 - **Status Bar Indicator**: Shows sanitization status and applied rules
@@ -50,11 +51,17 @@ SafePaste is a VS Code extension that automatically sanitizes sensitive data fro
 3. Press **Ctrl+V** to paste the sanitized version
 4. Use **Ctrl+Alt+V** if you need the original version
 
+### Alternative Auto-Sanitize Workflow
+1. Copy any code to your clipboard (from any source)
+2. Press **Ctrl+Shift+V** to automatically sanitize and paste in one step
+3. View sanitization results in the status bar or notification
+
 ### Command Palette
 Access SafePaste commands via Command Palette (Ctrl+Shift+P):
 - `SafePaste: Sanitize Clipboard Content`
 - `SafePaste: Paste Sanitized Content`
 - `SafePaste: Paste Original Content`
+- `SafePaste: Paste with Auto-Sanitize`
 - `SafePaste: Show Status`
 - `SafePaste: Configure Sanitization Rules`
 - `SafePaste: Clear Stored Content`

@@ -46,6 +46,11 @@
         "command": "safepaste.clearContent",
         "title": "Clear Stored Content",
         "category": "SafePaste"
+      },
+      {
+        "command": "safepaste.pasteWithAutoSanitize",
+        "title": "Paste with Auto-Sanitize",
+        "category": "SafePaste"
       }
     ],
     "keybindings": [
@@ -66,6 +71,12 @@
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
         "when": "editorTextFocus && safepaste.hasOriginalContent"
+      },
+      {
+        "command": "safepaste.pasteWithAutoSanitize",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {

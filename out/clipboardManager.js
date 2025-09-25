@@ -56,8 +56,8 @@ class ClipboardManager {
             this.originalContent = result.original;
             this.sanitizedContent = result.sanitized;
             this.lastSanitizationResult = result;
-            // Write the sanitized content back to clipboard
-            await vscode.env.clipboard.writeText(result.sanitized);
+            // Don't write back to clipboard - keep it in memory only
+            // This allows external clipboard changes to work normally
             return result;
         }
         catch (error) {
@@ -71,6 +71,23 @@ class ClipboardManager {
         const activeEditor = vscode.window.activeTextEditor;
         if (!activeEditor) {
             throw new Error('No active editor found');
+        }
+        // Check if clipboard content has changed since sanitization
+        const currentClipboard = await vscode.env.clipboard.readText();
+        if (currentClipboard !== this.originalContent) {
+            // Clipboard has changed - warn user and offer to re-sanitize
+            const choice = await vscode.window.showWarningMessage('Clipboard content has changed since sanitization. Use current clipboard content instead?', 'Re-sanitize Current', 'Use Stored Sanitized', 'Cancel');
+            if (choice === 'Cancel') {
+                return;
+            }
+            if (choice === 'Re-sanitize Current') {
+                // Re-sanitize current clipboard content
+                const result = await this.sanitizeClipboard();
+                if (result.hasChanges) {
+                    vscode.window.showInformationMessage(`Re-sanitized: Applied ${result.appliedRules.length} sanitization rules.`);
+                }
+            }
+            // If "Use Stored Sanitized" is chosen, continue with stored content
         }
         const selection = activeEditor.selection;
         await activeEditor.edit(editBuilder => {
@@ -107,6 +124,36 @@ class ClipboardManager {
     }
     getOriginalContent() {
         return this.originalContent;
+    }
+    async pasteWithAutoSanitize() {
+        const currentClipboard = await vscode.env.clipboard.readText();
+        if (!currentClipboard || currentClipboard.trim() === '') {
+            throw new Error('Clipboard is empty');
+        }
+        const activeEditor = vscode.window.activeTextEditor;
+        if (!activeEditor) {
+            throw new Error('No active editor found');
+        }
+        // Get the active editor's language for context-aware sanitization
+        const language = activeEditor.document.languageId;
+        const result = this.sanitizer.sanitize(currentClipboard, language);
+        // Update stored content
+        this.originalContent = result.original;
+        this.sanitizedContent = result.sanitized;
+        this.lastSanitizationResult = result;
+        // Paste the sanitized content
+        const selection = activeEditor.selection;
+        await activeEditor.edit(editBuilder => {
+            editBuilder.replace(selection, result.sanitized);
+        });
+        // Show notification if changes were made
+        if (result.hasChanges) {
+            vscode.window.showInformationMessage(`SafePaste: Auto-sanitized and pasted. Applied ${result.appliedRules.length} rules.`, 'Show Changes').then(selection => {
+                if (selection === 'Show Changes') {
+                    vscode.commands.executeCommand('safepaste.showStatus');
+                }
+            });
+        }
     }
     clear() {
         this.originalContent = '';
